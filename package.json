@@ -1,6 +1,6 @@
 {
   "name": "calculus-of-constructions",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Minimal, fast, robust implementation of the Calculus of Constructions on JavaScript",
   "main": "src/main.js",
   "directories": {

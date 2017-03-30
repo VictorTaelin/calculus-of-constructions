@@ -4,123 +4,149 @@ module.exports = (function() {
 
   var Core = require("./core.js");
 
-  // String * Int -> {term: Term, deps: [String], index: Int}
-  function parse(source, index) {
-    var index = index || 0;
-    var deps = [];
-    var used = {};
+  // (s : Either String (Map String String)) -> case s of { Left s => String, Right s => Map String String }
+  //   Receives a source or an object mapping names to sources,
+  //   returns either a term of a map of names and terms.
+  function read(sources) {
+    if (typeof sources !== "object")
+      sources = {"$": sources};
 
-    var term = (function parse() {
-      while (/[^a-zA-Z\(\)_0-9\.@:\-\*\%\#\{\}\[\]]/.test(source[index]||""))
-        ++index;
+    var terms = {};
 
-      if (source[index] === "(") {
-        ++index;
-        var app = parse();
-        var arg = [];
-        while (source[index] !== ")") {
-          arg.push(parse());
-          while (/\s/.test(source[index])) ++index;
-        };
-        ++index;
-        return function(depth, binders, aliases) {
-          var appTerm = app(depth, binders, aliases);
-          for (var i=0, l=arg.length; i<l; ++i)
-            appTerm = Core.App(appTerm, arg[i](depth, binders, aliases));
-          return appTerm; 
-        };
+    function parseTerm(name) {
+      var source = sources[name];
+      var index = 0;
 
-      } else if (source[index] === "*") {
-        ++index;
-        return function(depth, binders, aliases) {
-          return Core.Set;
-        };
+      if (!source)
+        return Core.Set;
 
-      } else {
-        var binder = "";
-        while (/[a-zA-Z0-9_]/.test(source[index]||""))
-          binder += source[index++];
-        if (source[index] === ":") {
+      if (terms[name])
+        return terms[name];
+
+      // Recursive parser
+      var term = (function parse() {
+        // Skip special characters
+        while (/[^a-zA-Z\(\)_0-9\.@:\-\*\%\#\{\}\[\]]/.test(source[index]||""))
           ++index;
-          var type = parse();
-          var body = parse();
-          return function(depth, binders, aliases) {
-            return Core.Lam(
-              type(depth, binders, aliases),
-              body(depth+1, binders.concat(binder), aliases));
+
+        // Application
+        if (source[index] === "(") {
+          ++index;
+          var app = parse();
+          var arg = [];
+          while (source[index] !== ")") {
+            arg.push(parse());
+            while (/\s/.test(source[index])) ++index;
           };
-        } else if (source[index] === ".") {
           ++index;
-          var type = parse();
-          var body = parse();
           return function(depth, binders, aliases) {
-            return Core.For(
-              type(depth, binders, aliases),
-              body(depth+1, binders.concat(binder), aliases));
-          };
-        } else if (source[index] === "@") {
-          ++index;
-          var body = parse();
-          return function(depth, binders, aliases) {
-            return Core.Fix(body(depth+1, binders.concat(binder), aliases));
-          };
-        } else if (source[index] === "=") {
-          ++index;
-          var value = parse();
-          var context = parse();
-          return function(depth, binders, aliases) {
-            var newAliases = {};
-            for (var key in aliases)
-              newAliases[key] = aliases[key];
-            newAliases[binder] = value;
-            return context(depth, binders, newAliases);
+            var appTerm = app(depth, binders, aliases);
+            for (var i=0, l=arg.length; i<l; ++i)
+              appTerm = Core.App(appTerm, arg[i](depth, binders, aliases));
+            return appTerm; 
           };
 
-        } else{
+        // Set
+        } else if (source[index] === "*") {
+          ++index;
           return function(depth, binders, aliases) {
-            var binderIndex = binders.lastIndexOf(binder);
-            if (binderIndex === -1) {
-              if (aliases[binder]) {
-                return aliases[binder](depth, binders, aliases);
-              };
-              if (!(used[binder] < 0)) {
-                deps.push(binder);
-                binderIndex = -deps.length;
-                used[binder] = binderIndex;
-              } else {
-                binderIndex = used[binder];
+            return Core.Set;
+          };
+
+        // Either a binder or a binding expression
+        } else {
+          var binder = "";
+
+          while (/[a-zA-Z0-9_]/.test(source[index]||""))
+            binder += source[index++];
+
+          // Lambda
+          if (source[index] === ":") {
+            ++index;
+            var type = parse();
+            var body = parse();
+            return function(depth, binders, aliases) {
+              return Core.Lam(
+                type(depth, binders, aliases),
+                body(depth+1, binders.concat(binder), aliases));
+            };
+
+          // Forall
+          } else if (source[index] === ".") {
+            ++index;
+            var type = parse();
+            var body = parse();
+            return function(depth, binders, aliases) {
+              return Core.For(
+                type(depth, binders, aliases),
+                body(depth+1, binders.concat(binder), aliases));
+            };
+
+          // Fix
+          } else if (source[index] === "@") {
+            ++index;
+            var body = parse();
+            return function(depth, binders, aliases) {
+              return Core.Fix(body(depth+1, binders.concat(binder), aliases));
+            };
+
+          // Let
+          } else if (source[index] === "=") {
+            ++index;
+            var value = parse();
+            var context = parse();
+            return function(depth, binders, aliases) {
+              var newAliases = {};
+              for (var key in aliases)
+                newAliases[key] = aliases[key];
+              newAliases[binder] = value;
+              return context(depth, binders, newAliases);
+            };
+
+          // Binder
+          } else {
+            return function(depth, binders, aliases) {
+              var binderIndex = binders.lastIndexOf(binder);
+              if (binderIndex === -1) {
+                if (aliases[binder]) {
+                  return aliases[binder](depth, binders, aliases);
+                } else {
+                  return parseTerm(binder);
+                }
               }
-            }
-            return Core.Var(depth - binderIndex - 1);
+              return Core.Var(depth - binderIndex - 1);
+            };
           };
-        };
-      }
-    })()(0, [], []);
-    return {term: term, deps: deps, index: index};
+        }
+      })()(0, [], []);
+
+      return terms[name] = term;
+    };
+
+    for (var name in sources)
+      parseTerm(name);
+
+    return terms["$"] || terms;
   };
 
-  // String -> Term
-  function read(source) {
-    return parse(source).term;
-  };
-
-  // Number -> String
-  // Turns a number into a var name (a, b, c... aa, ab...).
-  function toName(nat) {
-    var alphabet = "abcdefghijklmnopqrstuvwxyz";
-    var name = "";
-    do {
-      name += alphabet[nat % alphabet.length];
-      nat = Math.floor(nat / alphabet.length);
-    } while (nat > 0);
-    return name;
-  };
-
-  // Term, (Term -> Maybe String) -> String
-  // Stringifies a term. `combinatorName` is called on each combinator and may
-  // return a name for it.
-  function format(term, combinatorName) {
+  // Term, Maybe (Either (Map String String) (Term -> Maybe String)) -> String
+  //   Stringifies a term. `combinatorName` is called on each
+  //   combinator and may return a name for it.
+  function show(term, combinatorName) {
     if (!term) return "E";
+
+    if (!combinatorName)
+      combinatorName = function(){ return null };
+
+    function toName(nat) {
+      var alphabet = "abcdefghijklmnopqrstuvwxyz";
+      var name = "";
+      do {
+        name += alphabet[nat % alphabet.length];
+        nat = Math.floor(nat / alphabet.length);
+      } while (nat > 0);
+      return name;
+    };
 
     function extend(a,b) {
       var c = {};
@@ -185,8 +211,10 @@ module.exports = (function() {
 
     // Returns the string
     return (function go(term, args) {
-      if (term.isCombinator && combinatorName && combinatorName(term))
-        return combinatorName(term);
+      if (term.isCombinator && combinatorName) {
+        var name = combinatorName(term);
+        if (name) return name;
+      };
       switch (term.ctor) {
         case Core.VAR: return args[args.length-term.idx-1] || (term.idx>0?"v"+term.idx:"f"+(-term.idx));
         case Core.APP: 
@@ -214,21 +242,8 @@ module.exports = (function() {
     })(term, []);
   };
 
-  // Term -> String
-  function show(term) {
-    return format(term, function(term) { return null; });
-  };
-
-  // Term -> IO
-  function print(term) {
-    console.log(show(term));
-  };
-
   return {
-    parse: parse,
-    format: format,
     read: read,
-    show: show,
-    print: print
+    show: show
   }
 })();

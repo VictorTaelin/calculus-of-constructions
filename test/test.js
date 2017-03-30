@@ -39,3 +39,29 @@ describe("Exponentiation", () => {
 });
 
 
+describe("Files", () => {
+  it("Should be able to solve dependencies and stringify combinator names", () => {
+    var files = {
+      "NAT": "(Nat. * Succ. (.Nat Nat) Zero. Nat Nat)",
+      "C0": "(N:* S:(.N N) Z:N Z)",
+      "C1": "(N:* S:(.N N) Z:N (S Z))",
+      "PAIR": "(T:* P:(.NAT .NAT T) (P C0 C1))"
+    }
+
+    var terms = CoC.read(files);
+
+    var nameOf = {}
+    for (var name in files)
+      nameOf[CoC.show(terms[name])] = name;
+
+    var shown = CoC.show(
+      terms.PAIR,
+
+      comb => {
+        if (nameOf[CoC.show(comb)] !== "PAIR")
+          return nameOf[CoC.show(comb)]
+      });
+
+    assert(shown === "(a:* (a:(.NAT (.NAT a)) (a C0 C1)))");
+  });
+});

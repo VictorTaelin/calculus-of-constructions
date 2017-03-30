@@ -1,0 +1,3 @@
+T:*
+pair: (.Nat .Nat T)
+(pair two two)

@@ -5,35 +5,47 @@
 
 var fs = require("fs");
 var CoC = require("./main.js");
+var path = require("path");
+var args = process.argv.slice(2);
 
-var path = process.cwd();
-var call = process.argv[2];
-var file = process.argv[3] || "main";
+var files = {"$main$": args.pop()};
+fs.readdirSync(process.cwd()).forEach(function(name) {
+  if (name.slice(-4) === ".coc")
+    files[name.slice(0, -4)] = fs.readFileSync(path.join(process.cwd(), name), "utf8");
+});
 
-var main = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : file;
-var term = CoC.read(main);
+var terms = CoC.read(files);
 
-switch (process.argv[2]) {
-  case "type":
-  console.log(CoC.show(CoC.type(term)));
-  break;
+var nameOf = {};
+for (var name in terms)
+  nameOf[CoC.show(terms[name])] = name;
 
-  case "norm":
-  console.log(CoC.show(CoC.norm(term)));
-  break;
-
-  case "eval":
-  console.log("Type:");
-  console.log(CoC.show(CoC.type(term)));
-  console.log("")
-  console.log("Norm:");
-  console.log(CoC.show(CoC.norm(term)));
-  break;
-
-  case "help":
-  console.log("Usage:")
-  console.log("$ coc eval main # evaluates term on file named `main`")
-  console.log("$ coc type main # infers type of term on file named `main`")
-  console.log("$ coc type main # normalizes term on file named `main`")
-  break;
+if (args[0] === "help") {
+  console.log("Usage:");
+  console.log("$ coc term           # shows the base form of term.coc");
+  console.log("$ coc type term      # shows the type of term.coc");
+  console.log("$ coc norm term      # shows the normal form of term.coc");
+  console.log("$ coc full term      # fully shows the base form of term.coc");
+  console.log("$ coc full type term # fully shows the type of term.coc");
+  console.log("$ coc full norm term # fully shows the normal form of term.coc");
 }
+
+var full = false;
+if (args[0] === "full") {
+  full = true;
+  args.shift();
+}
+
+var map = function(x) { return x; };
+if (args[0] === "type") {
+  map = CoC.type;
+  args.shift();
+}
+if (args[0] === "norm") {
+  map = CoC.norm;
+  args.shift;
+};
+
+console.log(CoC.show(map(terms["$main$"]), function(comb) {
+  return !full && nameOf[CoC.show(comb)] !== "$main$" && nameOf[CoC.show(comb)];
+}));

@@ -1,0 +1,4 @@
+a: Nat
+b: Nat
+Nat: *
+(b (.Nat Nat) (a Nat))

@@ -20,7 +20,51 @@ A lightweight implementation of the [Calculus of Constructions](https://en.wikip
 
 - Simple command line interface to type-check / evaluate a file.
 
+- Can deal with files, solve devs recursively, auto-imports missing names.
+
+- Can pretty-print terms showing names for known combinators.
+
 - All that in less than 400 lines of code, ang a gziped minified size of just `2.3kb`.
+
+## Usage
+
+Install:
+
+    $ npm install -g calculus-of-constructions
+
+### From command line:
+
+The command line can be used to print the base form, the normal form, and the type of a term. It auto-includes undefined variables by detecting them on the same directory. It can either print the full form, or a short form with known names.
+
+```bash
+$ coc two                         # (a:* (b:(.a a) (a:a (b (b a)))))
+$ coc type "(exp two two)"        # Nat
+$ coc norm "(exp two two)"        # four
+$ coc full "(exp two two)"        # ((c:(a.* (.(.a a) (.a a))) (b:(a.* (.(.a a) (.a a))) (a:* (b (.a a) (c a))))) (a:* (b:(.a a) (a:a (b (b a))))) (a:* (b:(.a a) (a:a (b (b a))))))
+$ coc full type "(exp two two)"   # (a.* (.(.a a) (.a a)))
+$ coc full norm "(exp two two)"   # (a:* (b:(.a a) (a:a (b (b (b (b a)))))))
+```
+
+Check out the [examples](https://github.com/MaiaVictor/calculus-of-constructions/tree/master/examples) for that usage.
+
+### From JavaScript:
+
+```javascript
+const coc = require("calculus-of-constructions");
+
+const main = `T:* x:T x`; // id function
+
+const term = CoC.read(main); // parses source, could be an object {name: source, ...}
+const type = CoC.type(term); // infers type
+const norm = CoC.norm(term); // normalizes
+
+console.log(CoC.show(term)); // prints original term
+console.log(CoC.show(type)); // prints inferred type
+console.log(CoC.show(norm)); // prints normal form
+
+// CoC.show can receive, optionally, a function that
+// receives a combinator and returns a name of it. 
+```
 
 ## Syntax
 
@@ -45,32 +89,6 @@ A lightweight implementation of the [Calculus of Constructions](https://en.wikip
     Let `name` be the term `Term` inside the term `Body`.
 
 The name can be omitted from `Lambda` and `Forall`, so, for example, the equivalent of `Int -> Int` is just `.Int Int`. All other special characters are ignored, so you could write `λ a: Type -> Body` if that is more pleasing to you.
-
-## Usage
-
-Install:
-
-    npm install -g calculus-of-constructions
-
-Use from command line:
-
-    coc eval my_file.coc
-
-Use from JavaScript:
-
-```javascript
-const coc = require("calculus-of-constructions");
-
-const main = `T:* x:T x`; // id function
-
-const term = CoC.read(main); // parses source
-const type = CoC.type(term); // infers type
-const norm = CoC.norm(term); // normalizes
-
-console.log(CoC.show(term)); // prints original term
-console.log(CoC.show(type)); // prints inferred type
-console.log(CoC.show(norm)); // prints normal form
-```
 
 ## Example:
 
