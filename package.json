@@ -1,0 +1,28 @@
+{
+  "name": "calculus-of-constructions",
+  "version": "0.1.1",
+  "description": "Minimal, fast, robust implementation of the Calculus of Constructions on JavaScript",
+  "main": "src/main.js",
+  "directories": {
+    "test": "test"
+  },
+  "bin": {
+    "coc": "src/cmds.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maiavictor/calculus-of-constructions.git"
+  },
+  "keywords": [
+    "functional-programming"
+  ],
+  "author": "MaiaVictor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/maiavictor/calculus-of-constructions/issues"
+  },
+  "homepage": "https://github.com/maiavictor/calculus-of-constructions#readme"
+}
