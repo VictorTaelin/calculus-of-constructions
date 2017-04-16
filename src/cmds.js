@@ -8,7 +8,7 @@ var CoC = require("./main.js");
 var path = require("path");
 var args = process.argv.slice(2);
 
-var files = {"$main$": args.pop()};
+var files = {"_main": args.pop()};
 fs.readdirSync(process.cwd()).forEach(function(name) {
   if (name.slice(-4) === ".coc")
     files[name.slice(0, -4)] = fs.readFileSync(path.join(process.cwd(), name), "utf8");
@@ -18,7 +18,8 @@ var terms = CoC.read(files);
 
 var nameOf = {};
 for (var name in terms)
-  nameOf[CoC.show(terms[name])] = name;
+  if (name[0] !== "_" && name !== files._main)
+    nameOf[CoC.show(CoC.norm(terms[name]))] = name;
 
 if (args[0] === "help") {
   console.log("Usage:");
@@ -46,6 +47,6 @@ if (args[0] === "norm") {
   args.shift;
 };
 
-console.log(CoC.show(map(terms["$main$"]), function(comb) {
-  return !full && nameOf[CoC.show(comb)] !== "$main$" && nameOf[CoC.show(comb)];
+console.log(CoC.show(map(terms["_main"]), function(comb) {
+  return !full && nameOf[CoC.show(comb)] !== "_main" && nameOf[CoC.show(comb)];
 }));

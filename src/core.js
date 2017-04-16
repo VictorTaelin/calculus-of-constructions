@@ -15,80 +15,97 @@ module.exports = (function() {
   function hoas(term, mode, bipass) {
     function extend(val, typ, ctx) {
       return {
-        vals: {head:val, tail:ctx.vals},
-        typs: {head:typ, tail:ctx.typs},
-        depth: ctx.depth + 1};
+        vs: {head: val, tail: ctx.vs},
+        ts: {head: typ, tail: ctx.ts},
+        d: ctx.d + 1};
     };
 
-    function check(a,b) {
-      return (function check(a, b, d) {
-        if (a.ctor === FIX && b.ctor !== FIX) return check(a.ter(a),b,d);
-        if (a.ctor !== FIX && b.ctor === FIX) return check(a,b.ter(b),d);
-        switch (a.ctor + b.ctor * SET) {
-          case VAR + VAR*SET: return d-a.idx-1 === d-b.idx-1;
-          case FIX + FIX*SET: return check(a.ter(Var(d)),b.ter(Var(d)),d);
-          case APP + APP*SET: return check(a.fun,b.fun,d) && check(a.arg,b.arg,d);
-          case LAM + LAM*SET: return check(a.typ,b.typ,d) && check(a.bod(Var(d)),b.bod(Var(d)),d+1);
-          case FOR + FOR*SET: return check(a.typ,b.typ,d) && check(a.bod(Var(d)),b.bod(Var(d)),d+1);
-          case SET + SET*SET: return true;
+    function equals(a,b) {
+      return (function equals(a, b, d) {
+        if (a.ctor === FIX && b.ctor !== FIX) return equals(a.ter(a),b,d);
+        if (a.ctor !== FIX && b.ctor === FIX) return equals(a,b.ter(b),d);
+        if (a.ctor !== b.ctor) return false;
+        switch (a.ctor) {
+          case VAR: return d-a.idx-1 === d-b.idx-1;
+          case FIX: return equals(a.ter(Var(d)),b.ter(Var(d)),d);
+          case APP: return equals(a.fun,b.fun,d) && equals(a.arg,b.arg,d);
+          case LAM: return equals(a.typ,b.typ,d) && equals(a.bod(Var(d)),b.bod(Var(d)),d+1);
+          case FOR: return equals(a.typ,b.typ,d) && equals(a.bod(Var(d)),b.bod(Var(d)),d+1);
+          case SET: return true;
         };
         return false;
       })(a,b,0);
     };
 
-    function eval(term, mode, ctx) {
-      switch (term.ctor) {
+    function str(a) {
+      switch (a.ctor) {
+        case VAR: return "(Var "+a.idx+")";
+        case APP: return "(App "+str(a.fun)+" "+str(a.arg)+")";
+        case LAM: return "(Lam "+str(a.typ)+" "+str(a.bod)+")";
+        case FOR: return "(For "+str(a.typ)+" "+str(a.bod)+")";
+        case FIX: return "(Fix "+str(a.ter)+")";
+        case SET: return "Set";
+      };
+    }
 
+    function eval(term, ctx) {
+      switch (term.ctor) {
         case VAR:
-          var vars = mode === TYPE ? ctx.typs : ctx.vals;
-          for (var i=0, l=term.idx; i<l; ++i)
-            vars = vars.tail;
-          return vars.head;
+          var ts = ctx.ts;
+          var vs = ctx.vs;
+          for (var i=0, l=term.idx; i<l; ++i) {
+            ts = ts.tail;
+            vs = vs.tail;
+          }
+          return {v: vs.head, t: ts.head};
 
         case APP:
-          var f = eval(term.fun, mode, ctx);
-          var x = eval(term.arg, VALUE, ctx);
-          if (f.ctor === FIX)
-            f = f.ter(f);
-          if (mode === TYPE) {
-            var xt = eval(term.arg, TYPE, ctx);
-            if (!bipass && f.ctor !== FOR)
-              errors.push({type: "NotAFunction"});
-            if (!bipass && f.ctor === FOR && !check(f.typ, xt))
-              errors.push({
-                type: "TypeMismatch",
-                term: quote(0,x),
-                expected: quote(0,f.typ||Set),
-                actual: quote(0,xt)});
-            return f.ctor === FOR ? f.bod(x) : App(f, x);
-          } else {
-            return f.ctor === LAM ? f.bod(x) : App(f, x);
-          };
+          var f = eval(term.fun, ctx);
+          var x = eval(term.arg, ctx);
+
+          if (f.t.ctor === FIX) f.t = f.t.ter(f.t);
+          if (f.v.ctor === FIX) f.v = f.v.ter(f.v);
+
+          if (f.t.ctor !== FOR)
+            throw "NonFunctionApplication";
+
+          if (!equals(f.t.typ, x.t))
+            throw "TypeMismatch";
+
+          return {
+            t: f.t.ctor === FOR ? f.t.bod(x.v) : App(f.t, x.v),
+            v: f.v.ctor === LAM ? f.v.bod(x.v) : App(f.v, x.v)
+          }
 
         case LAM:
-          var typ = eval(term.typ, VALUE, ctx);
-          var val = function(v) { return eval(term.bod, mode, extend(v, typ, ctx)); };
-          return mode ? For(typ, val) : Lam(typ, val);
+          var typ = eval(term.typ, ctx);
+          var bod = function(v) { return eval(term.bod, extend(v, typ.v, ctx)); };
+
+          return {
+            t : For(typ.v, function(v) { return bod(v).t; }),
+            v : Lam(typ.v, function(v) { return bod(v).v; })
+          }
 
         case FOR:
-          if (mode === TYPE) {
-            var typt = eval(term.typ, TYPE, ctx);
-            var typv = eval(term.typ, VALUE, ctx);
-            var bodt = eval(term.bod, TYPE, extend(Set, typv, ctx));
-            if (!check(typt, Set) || !check(bodt, Set))
-              errors.push({type: "InvalidInputType"});
-            return Set;
-          } else {
-            var typ = eval(term.typ, VALUE, ctx);
-            var val = function(v) { return eval(term.bod, 0, extend(v, typ, ctx)); };
-            return For(typ, val);
-          };
+          var typ = eval(term.typ, ctx);
+          var bod = function(v) { return eval(term.bod, extend(v, typ.v, ctx)); };
+
+          if (!equals(typ.t, Set) || !equals(bod(Set).t, Set))
+            throw "ForallNotAType";
+
+          return {
+            t : Set,
+            v : For(typ.v, function (v) { return bod(v).v; })
+          }
 
         case FIX:
-          return Fix(function(v) { return eval(term.ter, mode, extend(v, Set, ctx))});
+          return {
+            t : Fix(function(v) { return eval(term.ter, extend(v, Set, ctx)).t; }),
+            v : Fix(function(v) { return eval(term.ter, extend(v, Set, ctx)).v; })
+          }
 
         case SET:
-          return Set;
+          return {t : Set, v : Set};
       };
     };
 
@@ -103,25 +120,23 @@ module.exports = (function() {
       };
     };
 
-    var errors = [];
-    var result = quote(0, eval(term, mode, {typs:null, vals:null, depth: 0}), false);
-
-    return {term: errors.length === 0 ? result : null, errors: errors};
+    try {
+      var e = eval(term, {ts:null, vs:null, d: 0});
+      var q = quote(0, mode ? e.t : e.v, false);
+      return q;
+    } catch (error) {
+      return error;
+    }
   };
 
   // Reduces to normal form
   function norm(term) {
-    return hoas(term, 0, 1).term;
+    return hoas(term, 0, 1);
   };
 
   // Infers type
   function type(term, bipass) {
-    return hoas(term, 1, bipass).term;
-  };
-
-  // Infers type & returns errors
-  function check(term) {
-    return hoas(term, 1, 0);
+    return hoas(term, 1, bipass);
   };
 
   return {

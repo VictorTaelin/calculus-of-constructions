@@ -29,20 +29,24 @@ module.exports = (function() {
         while (/[^a-zA-Z\(\)_0-9\.@:\-\*\%\#\{\}\[\]]/.test(source[index]||""))
           ++index;
 
-        // Application
-        if (source[index] === "(") {
+        // Application | (f x y z) -> (((f x) y) z) | [f x y z] -> (f (x (y z)))
+        if (source[index] === "(" || source[index] === "[") {
           ++index;
-          var app = parse();
+          var rev = source[index - 1] === "(";
           var arg = [];
-          while (source[index] !== ")") {
+          while (source[index] !== ")" && source[index] !== "]") {
             arg.push(parse());
             while (/\s/.test(source[index])) ++index;
           };
           ++index;
           return function(depth, binders, aliases) {
-            var appTerm = app(depth, binders, aliases);
-            for (var i=0, l=arg.length; i<l; ++i)
-              appTerm = Core.App(appTerm, arg[i](depth, binders, aliases));
+            var appTerm = arg[rev ? 0 : arg.length - 1](depth, binders, aliases);
+            if (rev)
+              for (var i=1, l=arg.length; i<l; ++i)
+                appTerm = Core.App(appTerm, arg[i](depth, binders, aliases));
+            else
+              for (var i=arg.length-2; i>=0; --i)
+                appTerm = Core.App(arg[i](depth, binders, aliases), appTerm);
             return appTerm; 
           };
 
@@ -133,7 +137,8 @@ module.exports = (function() {
   //   Stringifies a term. `combinatorName` is called on each
   //   combinator and may return a name for it.
   function show(term, combinatorName) {
-    if (!term) return "E";
+    if (typeof term === "string")
+      return term;
 
     if (!combinatorName)
       combinatorName = function(){ return null };
@@ -188,8 +193,10 @@ module.exports = (function() {
     // Generates clean variable names
     (function go(term) {
       switch (term.ctor) {
-        case Core.VAR: return [[term.idx, {}]];
-        case Core.APP: return merge(go(term.fun), go(term.arg));
+        case Core.VAR:
+          return [[term.idx, {}]];
+        case Core.APP:
+          return merge(go(term.fun), go(term.arg));
         case Core.LAM:
         case Core.FOR:
           var scope = go(term.bod);
@@ -205,6 +212,8 @@ module.exports = (function() {
           var nextScope = next(scope);
           term.isCombinator = nextScope.length === 0;
           return nextScope;
+        case Core.ERR:
+          return go(term.ter);
         default: return [];
       };
     })(term);
@@ -216,13 +225,15 @@ module.exports = (function() {
         if (name) return name;
       };
       switch (term.ctor) {
-        case Core.VAR: return args[args.length-term.idx-1] || (term.idx>0?"v"+term.idx:"f"+(-term.idx));
+        case Core.VAR:
+          return args[args.length-term.idx-1] || (term.idx>0 ? "Var"+term.idx  :"FreeVar"+(-term.idx));
         case Core.APP: 
           var apps = [];
-          for (var app = term; app.ctor === Core.APP; app = app.fun)
-            apps.push(go(app.arg, args));
+          var left = term.fun.ctor === Core.APP;
+          for (var app = term; app.ctor === Core.APP; app = left ? app.fun : app.arg)
+            apps.push(go(left ? app.arg : app.fun, args));
           apps.push(go(app, args));
-          return "("+apps.reverse().join(" ")+")";
+          return left || apps.length <= 2 ? "("+apps.reverse().join(" ")+")" : "["+apps.join(" ")+"]";
         case Core.LAM: 
           var arg = term.arg >= 0 ? toName(term.arg) : "";
           var typ = go(term.typ, args);

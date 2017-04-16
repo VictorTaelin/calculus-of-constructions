@@ -27,12 +27,12 @@ describe("Exponentiation", () => {
     `;
 
     const Nat = `(a.* (.(.a a) (.a a)))`;
-    const four = `(a:* (b:(.a a) (a:a (b (b (b (b a)))))))`;
+    const four = `(a:* (b:(.a a) (a:a [b b b b a])))`;
 
     const term = CoC.read(main);
     const type = CoC.type(term);
     const norm = CoC.norm(term);
-    
+
     assert(CoC.show(type) === Nat);
     assert(CoC.show(norm) === four);
   });
