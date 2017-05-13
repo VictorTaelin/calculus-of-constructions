@@ -1,0 +1,4 @@
+a: *
+b: .a *
+t: (Sigma a b)
+(t a (x:a y:(b x) x))

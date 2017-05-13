@@ -1,0 +1,5 @@
+S= Nat_Succ
+Z= Nat_Zero
+
+[S S S S Z]
+

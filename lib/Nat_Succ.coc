@@ -1,0 +1,6 @@
+n: Nat
+
+Nat: *
+Succ: .Nat Nat
+Zero: Nat
+(Succ (n Nat Succ Zero))

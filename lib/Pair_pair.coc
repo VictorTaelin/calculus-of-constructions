@@ -1,0 +1,9 @@
+a: *
+b: *
+
+x: a
+y: b
+
+Pair: *
+pair: .a .b Pair
+Pair

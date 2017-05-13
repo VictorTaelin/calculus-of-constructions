@@ -1,0 +1,69 @@
+:* :* :* :* x
+
+fuck i give up
+
+snd=
+  a: *
+  b: *
+  t: (Sigma a (.a b))
+  (t (b (Sigma_fst a b t)) (x:a y:(b x) y))
+
+k=
+  (Sigma_Pair Nat (:Nat Bool) Nat_Zero Bool_True)
+
+snd
+
+k
+(a.* (.(.Nat (.Nat a)) a))
+(a:* (a:(.Nat (.Nat a)) (a Nat_Zero Nat_Zero)))
+
+(snd Nat (:Nat Nat))
+(.(a.* (.(.Nat (.Nat a)) a)) (.(.Nat (.Nat Nat)) Nat))
+(a:(a.* (.(.Nat (.Nat a)) a)) (Nat a))
+
+
+
+
+(d:* (c:(.d *) (a:(b.* (.(a.d (.(a c) b)) b)) [a c (d a) (a:d (:(a c) a))])))
+
+Nat_Zero
+
+todo
+
+A=
+  a: *
+  b: .a *
+  t: (Sigma a b)
+  (t Nat (x:a y:(b x) Nat_Zero))
+
+a
+
+
+(A (Sigma_fst a b t)
+
+
+(Sigma_fst Nat (:Nat Nat)
+  (Sigma_Pair Nat (:Nat Nat) Nat_Zero Nat_Zero))
+
+
+
+
+
+a. *
+b. .a *
+t. (Sigma a b)
+a
+
+(a.* (c.(.a *) (.(b.* (.(a.a (.(a c) b)) b)) a)))
+(a.* (c.(.a *) (.(b.* (.(a.a (.(a c) b)) b)) (.a a))))
+
+
+
+
+
+a: *
+b: .a *
+t: (Sigma a b)
+x: a
+(t (b x) (:a y:(b x) y))
+

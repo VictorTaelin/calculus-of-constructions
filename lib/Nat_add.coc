@@ -1,0 +1,7 @@
+a: Nat
+b: Nat
+
+Nat: *
+Succ: .Nat Nat
+Zero: Nat
+(a Nat Succ (b Nat Succ Zero)) 

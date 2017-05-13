@@ -37,17 +37,6 @@ module.exports = (function() {
       })(a,b,0);
     };
 
-    function str(a) {
-      switch (a.ctor) {
-        case VAR: return "(Var "+a.idx+")";
-        case APP: return "(App "+str(a.fun)+" "+str(a.arg)+")";
-        case LAM: return "(Lam "+str(a.typ)+" "+str(a.bod)+")";
-        case FOR: return "(For "+str(a.typ)+" "+str(a.bod)+")";
-        case FIX: return "(Fix "+str(a.ter)+")";
-        case SET: return "Set";
-      };
-    }
-
     function eval(term, ctx) {
       switch (term.ctor) {
         case VAR:
@@ -148,6 +137,6 @@ module.exports = (function() {
     Set: Set, SET: SET,
     hoas: hoas,
     norm: norm,
-    type: type,
+    type: type
   };
 })();

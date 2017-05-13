@@ -1,0 +1,6 @@
+T: *
+
+List. *
+Cons. .T .List List
+Nil. List
+List

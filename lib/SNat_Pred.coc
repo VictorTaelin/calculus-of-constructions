@@ -1,0 +1,7 @@
+k:Nat
+n:(SNat (Nat_Succ k))
+(n 
+  (Maybe (SNat k))
+  (p:(SNat k) (Maybe_Just (SNat k) p))
+  (Maybe_Nothing (SNat k)))
+

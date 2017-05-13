@@ -1,0 +1,6 @@
+a: *
+x: a
+r: *
+Just: .a r
+Nothing: r
+(Just x)

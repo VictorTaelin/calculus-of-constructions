@@ -1,0 +1,6 @@
+k: Nat
+n: (SNat k)
+r: *
+s: (.(SNat k) r)
+z: r
+(s n)

@@ -1,0 +1,9 @@
+T: *
+
+head: T
+tail: (List T)
+
+List: *
+Cons: .T .List List
+Nil: List
+(Cons head (tail List Cons Nil))

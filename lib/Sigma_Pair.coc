@@ -1,0 +1,7 @@
+a: *
+b: .a *
+x: a
+y: (b x)
+r: *
+t: x.a y.(b x) r
+(t x y)

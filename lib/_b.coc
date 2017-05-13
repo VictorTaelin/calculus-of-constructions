@@ -1,0 +1,133 @@
+C= (List_Cons Bool)
+N= (List_Nil Bool)
+1= B_1
+0= B_0
+
+(C 1 (C 0 N))
+
+T:* x:T x
+
+
+
+
+
+/*Bin_fold=*/
+  /*(b:(R.* .R R) (b b))*/
+
+/*Bin_fold*/
+
+
+
+
+
+
+
+
+Bin=
+  B@
+  R. *
+  B0. .B R
+  B1. .B R
+  Be. B
+  R
+
+Naty=
+  S: *
+  R: *
+  Succ. .S R
+  Zero. R
+  R
+
+
+(b:Bin b)
+
+
+@(.b@(a.* (.(.b a) (.(.b a) (.b a)))) (a.* (.(.a a) (.(.a a) (.a (.(.b@(a.* (.(.b a) (.(.b a) (.b a)))) a) (.(.b@(a.* (.(.b a) (.(.b a) (.b a)))) a) (.b@(a.* (.(.b a) (.(.b a) (.b a)))) a))))))))
+
+(a:b@(a.* (.(.b a) (.(.b a) (.b a)))) a)
+
+
+Bin_fold
+
+(B@ R:* B0:(.B R) B1:(.B R) Be:B 
+  (B@ R:* B0:(.B R) B1:(.B R) Be:B 
+    (B0 Be)))
+
+
+  
+  
+
+
+∀ r . (Bin -> r) -> (Bin -> r) -> r
+
+
+
+
+
+
+PN= 
+  n@ N
+  PN. (.N *)
+  PS. n.N .(PN n) (PN (N_S n))
+  PZ. (PN N_Z)
+  (PN n)
+
+PN
+  
+
+
+
+N:* S:(-Nat  N) Z:N
+  (S 3 
+    (N:* S:(-N N) Z:N
+      (S 2
+        (...)))) 
+
+
+(Nat : ∗)  → ιx.∀C : Nat → ∗.(   n : Nat.C n → C (S n)) → C 0 → C x
+
+
+(s -> z -> (s (s -> z -> (s (s -> z -> 
+
+
+
+t: *
+n: Nat
+
+Vec- -Nat *
+
+Cons- n-Nat -t -(Vec n) (Vec (Nat.Succ n))
+Nil- (Vec Nat.Zero) 
+
+(Vec n)
+
+X=
+  PN: .N *
+  PS: n.N .(PN n) (PN (N_S n))
+  PZ: (PN N_Z)
+  (PS N_3 (PS N_2 (PS N_1 (PS N_0 PZ))))
+
+
+
+
+
+
+```haskell
+main = {
+  let chars = #getLine in
+  let otherchars = {
+    let a = #chars
+    let b = #chars
+    [a] ++ [b]
+  }
+  putStrLn otherchars
+}
+```
+
+main = do
+    chars <- getLine
+    let otherchars = do 
+        a <- chars
+        b <- chars
+        [a] ++ [b]
+    putStrLn otherchars

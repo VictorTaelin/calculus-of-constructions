@@ -1,0 +1,5 @@
+n:Nat (n
+  (.Nat (List Nat))
+  (xs:(.Nat (List Nat)) x:Nat (List_Cons Nat x (xs (Nat_Succ x))))
+  (x:Nat (List_Nil Nat))
+  Nat_Zero)
