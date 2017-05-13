@@ -200,20 +200,22 @@ module.exports = (function() {
         case Core.LAM:
         case Core.FOR:
           var scope = go(term.bod);
-          if (scope[0] && scope[0][0] === 0)
+          if (scope[0] && scope[0][0] === 0) {
             term.arg = minVar(scope[0][1]); // ugly side-effective hack
+          }
           var nextScope = merge(go(term.typ), next(scope));
           term.isCombinator = nextScope.length === 0;
           return nextScope;
         case Core.FIX:
           var scope = go(term.ter);
-          if (scope[0] && scope[0][0] === 0)
+          if (scope[0] && scope[0][0] === 0) {
             term.arg = minVar(scope[0][1]); // ugly side-effective hack
+          }
           var nextScope = next(scope);
           term.isCombinator = nextScope.length === 0;
           return nextScope;
         case Core.ERR:
-          return go(term.ter);
+          return [[]];
         default: return [];
       };
     })(term);
@@ -233,7 +235,9 @@ module.exports = (function() {
           for (var app = term; app.ctor === Core.APP; app = left ? app.fun : app.arg)
             apps.push(go(left ? app.arg : app.fun, args));
           apps.push(go(app, args));
-          return left || apps.length <= 2 ? "("+apps.reverse().join(" ")+")" : "["+apps.join(" ")+"]";
+          return apps.length === 2 ? "("+apps.join(" ")+")"
+            : left ? "("+apps.reverse().join(" ")+")"
+            : "["+apps.join(" ")+"]";
         case Core.LAM: 
           var arg = term.arg >= 0 ? toName(term.arg) : "";
           var typ = go(term.typ, args);
